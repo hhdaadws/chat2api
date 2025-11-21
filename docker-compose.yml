@@ -1,4 +1,4 @@
-version: '3'
+version: '3.8'
 
 services:
   chat2api:
@@ -11,8 +11,24 @@ services:
       - ./data:/app/data
     environment:
       - TZ=Asia/Shanghai
-      - AUTHORIZATION=sk-xxx
+      # JWT Secret Key - 生产环境请修改为随机密钥
+      - SECRET_KEY=change-this-to-a-random-secret-key-in-production
+      # 数据库 URL (使用 volume 持久化)
+      - DATABASE_URL=sqlite+aiosqlite:///./data/chat2api.db
+      # 首次启动自动创建管理员账号（可选）
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=admin123456
+      - ADMIN_EMAIL=admin@example.com
+      # 可选：其他配置通过设置页面管理
+      # - AUTHORIZATION=sk-xxx
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5005/auth/login', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
+  # 可选：自动更新容器
   watchtower:
     image: containrrr/watchtower
     container_name: watchtower
@@ -20,3 +36,5 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     command: --cleanup --interval 300 chat2api
+    profiles:
+      - watchtower

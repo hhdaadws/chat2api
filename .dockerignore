@@ -1,9 +1,47 @@
+# Environment files
 .env
+.env.*
+
+# Python cache
 *.pyc
-/.git/
-/.idea/
-/docs/
-/tmp/
-/data/
-/.venv/
-/.vscode/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Documentation
+docs/
+*.md
+!DOCKER.md
+!DATABASE_MIGRATION.md
+
+# Temporary files
+tmp/
+*.log
+nohup.out
+
+# Data directory (use volume mount)
+data/
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# GitHub
+.github/
+
+# Docker files
+docker-compose*.yml
+Dockerfile.*
