@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册 - Chat2API</title>
+    <script src="https://unpkg.com/vue@3.3.4/dist/vue.global.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .alert {
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .alert-error {
+            background: #fee;
+            color: #c33;
+            border: 1px solid #fcc;
+        }
+
+        .alert-success {
+            background: #efe;
+            color: #3c3;
+            border: 1px solid #cfc;
+        }
+
+        .links {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .links a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .links a:hover {
+            text-decoration: underline;
+        }
+
+        .password-strength {
+            margin-top: 5px;
+            font-size: 12px;
+        }
+
+        .strength-weak { color: #c33; }
+        .strength-medium { color: #f90; }
+        .strength-strong { color: #3c3; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="container">
+            <h1>注册 Chat2API</h1>
+
+            <div v-if="error" class="alert alert-error">{{ error }}</div>
+            <div v-if="success" class="alert alert-success">{{ success }}</div>
+
+            <form @submit.prevent="handleRegister">
+                <div class="form-group">
+                    <label for="username">用户名</label>
+                    <input
+                        type="text"
+                        id="username"
+                        v-model="form.username"
+                        required
+                        minlength="3"
+                        :disabled="loading"
+                        placeholder="至少3个字符"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="email">邮箱</label>
+                    <input
+                        type="email"
+                        id="email"
+                        v-model="form.email"
+                        required
+                        :disabled="loading"
+                        placeholder="your@email.com"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input
+                        type="password"
+                        id="password"
+                        v-model="form.password"
+                        required
+                        minlength="6"
+                        :disabled="loading"
+                        placeholder="至少6个字符"
+                    >
+                    <div v-if="form.password" class="password-strength" :class="passwordStrengthClass">
+                        密码强度: {{ passwordStrengthText }}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword">确认密码</label>
+                    <input
+                        type="password"
+                        id="confirmPassword"
+                        v-model="form.confirmPassword"
+                        required
+                        :disabled="loading"
+                        placeholder="再次输入密码"
+                    >
+                </div>
+
+                <button type="submit" :disabled="loading || !isFormValid">
+                    {{ loading ? '注册中...' : '注册' }}
+                </button>
+            </form>
+
+            <div class="links">
+                <a href="/auth/login">已有账号？登录</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    form: {
+                        username: '',
+                        email: '',
+                        password: '',
+                        confirmPassword: ''
+                    },
+                    error: '',
+                    success: '',
+                    loading: false
+                }
+            },
+            computed: {
+                passwordStrength() {
+                    const password = this.form.password;
+                    if (password.length < 6) return 0;
+
+                    let strength = 0;
+                    if (password.length >= 8) strength++;
+                    if (/[a-z]/.test(password)) strength++;
+                    if (/[A-Z]/.test(password)) strength++;
+                    if (/[0-9]/.test(password)) strength++;
+                    if (/[^a-zA-Z0-9]/.test(password)) strength++;
+
+                    if (strength <= 2) return 1; // weak
+                    if (strength <= 3) return 2; // medium
+                    return 3; // strong
+                },
+                passwordStrengthText() {
+                    const strengths = ['', '弱', '中等', '强'];
+                    return strengths[this.passwordStrength];
+                },
+                passwordStrengthClass() {
+                    const classes = ['', 'strength-weak', 'strength-medium', 'strength-strong'];
+                    return classes[this.passwordStrength];
+                },
+                isFormValid() {
+                    return this.form.username.length >= 3 &&
+                           this.form.email &&
+                           this.form.password.length >= 6 &&
+                           this.form.password === this.form.confirmPassword;
+                }
+            },
+            methods: {
+                async handleRegister() {
+                    this.error = '';
+                    this.success = '';
+
+                    if (this.form.password !== this.form.confirmPassword) {
+                        this.error = '两次输入的密码不一致';
+                        return;
+                    }
+
+                    this.loading = true;
+
+                    const formData = new FormData();
+                    formData.append('username', this.form.username);
+                    formData.append('email', this.form.email);
+                    formData.append('password', this.form.password);
+
+                    try {
+                        const response = await fetch('/auth/register', {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        const data = await response.json();
+
+                        if (response.ok) {
+                            localStorage.setItem('access_token', data.access_token);
+                            localStorage.setItem('username', data.username);
+                            localStorage.setItem('is_admin', false);
+
+                            this.success = '注册成功！正在跳转...';
+
+                            setTimeout(() => {
+                                window.location.href = '/tokens';
+                            }, 1000);
+                        } else {
+                            this.error = data.detail || '注册失败';
+                        }
+                    } catch (err) {
+                        this.error = '注册失败：' + err.message;
+                    } finally {
+                        this.loading = false;
+                    }
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

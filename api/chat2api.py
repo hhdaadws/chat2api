@@ -2,18 +2,21 @@ import asyncio
 import types
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from fastapi import Request, HTTPException, Form, Security
+from fastapi import Request, HTTPException, Form, Security, Depends
 from fastapi.responses import HTMLResponse, StreamingResponse, JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials
 from starlette.background import BackgroundTask
 
 import utils.globals as globals
+from utils.db_globals import global_state
 from app import app, templates, security_scheme
 from chatgpt.ChatService import ChatService
 from chatgpt.authorization import refresh_all_tokens
 from utils.Logger import logger
 from utils.configs import api_prefix, scheduled_refresh
 from utils.retry import async_retry
+from db.auth import get_current_user, optional_auth
+from db.models import User
 
 scheduler = AsyncIOScheduler()
 
@@ -77,60 +80,64 @@ async def send_conversation(request: Request, credentials: HTTPAuthorizationCred
 
 
 @app.get(f"/{api_prefix}/tokens" if api_prefix else "/tokens", response_class=HTMLResponse)
-async def upload_html(request: Request):
-    tokens_count = len(set(globals.token_list) - set(globals.error_token_list))
+async def upload_html(request: Request, current_user: User = Depends(get_current_user)):
+    """Token management page - requires authentication"""
+    tokens_count = len(global_state.token_list)
     return templates.TemplateResponse("tokens.html",
                                       {"request": request, "api_prefix": api_prefix, "tokens_count": tokens_count})
 
 
 @app.post(f"/{api_prefix}/tokens/upload" if api_prefix else "/tokens/upload")
-async def upload_post(text: str = Form(...)):
+async def upload_post(text: str = Form(...), current_user: User = Depends(get_current_user)):
+    """Upload tokens - requires authentication"""
     lines = text.split("\n")
+    added_count = 0
     for line in lines:
         if line.strip() and not line.startswith("#"):
-            globals.token_list.append(line.strip())
-            with open(globals.TOKENS_FILE, "a", encoding="utf-8") as f:
-                f.write(line.strip() + "\n")
-    logger.info(f"Token count: {len(globals.token_list)}, Error token count: {len(globals.error_token_list)}")
-    tokens_count = len(set(globals.token_list) - set(globals.error_token_list))
-    return {"status": "success", "tokens_count": tokens_count}
+            await global_state.add_token(line.strip(), current_user.id if not current_user.is_admin else None)
+            added_count += 1
+
+    logger.info(f"Added {added_count} tokens. Total: {len(global_state.token_list)}, Error: {len(global_state.error_token_list)}")
+    tokens_count = len(global_state.token_list)
+    return {"status": "success", "tokens_count": tokens_count, "added": added_count}
 
 
 @app.post(f"/{api_prefix}/tokens/clear" if api_prefix else "/tokens/clear")
-async def clear_tokens():
-    globals.token_list.clear()
-    globals.error_token_list.clear()
-    with open(globals.TOKENS_FILE, "w", encoding="utf-8") as f:
-        pass
-    logger.info(f"Token count: {len(globals.token_list)}, Error token count: {len(globals.error_token_list)}")
-    tokens_count = len(set(globals.token_list) - set(globals.error_token_list))
-    return {"status": "success", "tokens_count": tokens_count}
+async def clear_tokens(current_user: User = Depends(get_current_user)):
+    """Clear all tokens - requires authentication"""
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Only admins can clear all tokens")
+
+    await global_state.clear_tokens()
+    logger.info(f"Cleared all tokens")
+    return {"status": "success", "tokens_count": 0}
 
 
 @app.post(f"/{api_prefix}/tokens/error" if api_prefix else "/tokens/error")
-async def error_tokens():
-    error_tokens_list = list(set(globals.error_token_list))
+async def error_tokens(current_user: User = Depends(get_current_user)):
+    """Get error tokens list - requires authentication"""
+    error_tokens_list = list(set(global_state.error_token_list))
     return {"status": "success", "error_tokens": error_tokens_list}
 
 
 @app.get(f"/{api_prefix}/tokens/add/{{token}}" if api_prefix else "/tokens/add/{token}")
-async def add_token(token: str):
+async def add_token(token: str, current_user: User = Depends(get_current_user)):
+    """Add a single token - requires authentication"""
     if token.strip() and not token.startswith("#"):
-        globals.token_list.append(token.strip())
-        with open(globals.TOKENS_FILE, "a", encoding="utf-8") as f:
-            f.write(token.strip() + "\n")
-    logger.info(f"Token count: {len(globals.token_list)}, Error token count: {len(globals.error_token_list)}")
-    tokens_count = len(set(globals.token_list) - set(globals.error_token_list))
+        await global_state.add_token(token.strip(), current_user.id if not current_user.is_admin else None)
+
+    logger.info(f"Token count: {len(global_state.token_list)}, Error token count: {len(global_state.error_token_list)}")
+    tokens_count = len(global_state.token_list)
     return {"status": "success", "tokens_count": tokens_count}
 
 
 @app.post(f"/{api_prefix}/seed_tokens/clear" if api_prefix else "/seed_tokens/clear")
-async def clear_seed_tokens():
-    globals.seed_map.clear()
-    globals.conversation_map.clear()
-    with open(globals.SEED_MAP_FILE, "w", encoding="utf-8") as f:
-        f.write("{}")
-    with open(globals.CONVERSATION_MAP_FILE, "w", encoding="utf-8") as f:
-        f.write("{}")
-    logger.info(f"Seed token count: {len(globals.seed_map)}")
-    return {"status": "success", "seed_tokens_count": len(globals.seed_map)}
+async def clear_seed_tokens(current_user: User = Depends(get_current_user)):
+    """Clear seed tokens - requires authentication"""
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Only admins can clear seed tokens")
+
+    await global_state.clear_seed_maps()
+    await global_state.clear_conversation_maps()
+    logger.info(f"Cleared seed tokens")
+    return {"status": "success", "seed_tokens_count": 0}

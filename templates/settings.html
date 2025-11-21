@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统设置 - Chat2API</title>
+    <script src="https://unpkg.com/vue@3.3.4/dist/vue.global.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 40px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: white;
+            color: #667eea;
+        }
+
+        .btn-primary:hover {
+            background: #f0f0f0;
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        .btn-success {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #45a049;
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #da190b;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 16px;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            color: #667eea;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .config-item {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .config-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .config-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .config-description {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .config-category {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #667eea;
+            color: white;
+            font-size: 11px;
+            border-radius: 3px;
+            text-transform: uppercase;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .init-section {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .init-section p {
+            margin-bottom: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="header">
+            <div class="header-content">
+                <h1>⚙️ 系统设置</h1>
+                <div class="user-info">
+                    <span>👤 {{ username }}</span>
+                    <button class="btn btn-primary" @click="logout">退出登录</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div v-if="message" class="alert" :class="messageType === 'success' ? 'alert-success' : 'alert-error'">
+                {{ message }}
+            </div>
+
+            <div class="tabs">
+                <button
+                    v-for="category in categories"
+                    :key="category.key"
+                    class="tab"
+                    :class="{ active: activeTab === category.key }"
+                    @click="activeTab = category.key"
+                >
+                    {{ category.label }}
+                </button>
+            </div>
+
+            <div v-if="loading" class="loading">
+                <p>加载配置中...</p>
+            </div>
+
+            <div v-else-if="configs.length === 0">
+                <div class="card init-section">
+                    <div class="card-title">初始化系统配置</div>
+                    <p>系统尚未初始化配置，点击下方按钮创建默认配置项</p>
+                    <button class="btn btn-success" @click="initDefaultConfigs">初始化默认配置</button>
+                </div>
+            </div>
+
+            <div v-else>
+                <div class="card">
+                    <div class="card-title">{{ getCurrentCategoryLabel() }}</div>
+
+                    <div v-if="filteredConfigs.length === 0" class="empty">
+                        该分类暂无配置项
+                    </div>
+
+                    <div
+                        v-for="config in filteredConfigs"
+                        :key="config.id"
+                        class="config-item"
+                    >
+                        <div class="config-header">
+                            <div>
+                                <div class="config-label">{{ config.key }}</div>
+                                <div class="config-description">{{ config.description || '无描述' }}</div>
+                            </div>
+                            <span class="config-category">{{ config.category || 'general' }}</span>
+                        </div>
+
+                        <div class="form-group">
+                            <template v-if="config.config_type === 'bool'">
+                                <label>
+                                    <input
+                                        type="checkbox"
+                                        v-model="config.editValue"
+                                        @change="() => config.editValue = config.editValue === 'true' || config.editValue === true ? 'false' : 'true'"
+                                        :checked="config.editValue === 'true' || config.editValue === true"
+                                    >
+                                    {{ config.editValue === 'true' || config.editValue === true ? '启用' : '禁用' }}
+                                </label>
+                            </template>
+
+                            <template v-else-if="config.config_type === 'int'">
+                                <input
+                                    type="number"
+                                    v-model="config.editValue"
+                                    :placeholder="config.value || '请输入数字'"
+                                >
+                            </template>
+
+                            <template v-else>
+                                <textarea
+                                    v-model="config.editValue"
+                                    :placeholder="config.value || '请输入值'"
+                                    :type="config.is_secret ? 'password' : 'text'"
+                                ></textarea>
+                            </template>
+                        </div>
+
+                        <div class="actions">
+                            <button class="btn btn-success" @click="saveConfig(config)">
+                                保存
+                            </button>
+                            <button class="btn btn-secondary" @click="resetConfig(config)">
+                                重置
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    username: localStorage.getItem('username') || 'Admin',
+                    configs: [],
+                    loading: true,
+                    message: '',
+                    messageType: 'success',
+                    activeTab: 'all',
+                    categories: [
+                        { key: 'all', label: '全部配置' },
+                        { key: 'security', label: '安全设置' },
+                        { key: 'request', label: '请求设置' },
+                        { key: 'functionality', label: '功能设置' },
+                        { key: 'gateway', label: '网关设置' }
+                    ]
+                }
+            },
+            computed: {
+                filteredConfigs() {
+                    if (this.activeTab === 'all') {
+                        return this.configs;
+                    }
+                    return this.configs.filter(c => c.category === this.activeTab);
+                }
+            },
+            async mounted() {
+                await this.checkAuth();
+                await this.loadConfigs();
+            },
+            methods: {
+                async checkAuth() {
+                    const token = localStorage.getItem('access_token');
+                    const isAdmin = localStorage.getItem('is_admin');
+
+                    if (!token) {
+                        window.location.href = '/auth/login';
+                        return;
+                    }
+
+                    if (isAdmin !== 'true') {
+                        this.showMessage('您没有权限访问此页面', 'error');
+                        setTimeout(() => {
+                            window.location.href = '/tokens';
+                        }, 2000);
+                    }
+                },
+                async loadConfigs() {
+                    const token = localStorage.getItem('access_token');
+
+                    try {
+                        const response = await fetch('/api/settings/configs', {
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+
+                        if (response.ok) {
+                            this.configs = await response.json();
+                            this.configs.forEach(c => {
+                                c.editValue = c.value;
+                            });
+                        } else if (response.status === 401) {
+                            window.location.href = '/auth/login';
+                        }
+                    } catch (err) {
+                        this.showMessage('加载配置失败: ' + err.message, 'error');
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                async saveConfig(config) {
+                    const token = localStorage.getItem('access_token');
+
+                    try {
+                        const response = await fetch(`/api/settings/configs/${config.id}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                value: config.editValue
+                            })
+                        });
+
+                        if (response.ok) {
+                            const updated = await response.json();
+                            config.value = updated.value;
+                            config.editValue = updated.value;
+                            this.showMessage(`配置 ${config.key} 保存成功`, 'success');
+                        } else {
+                            const error = await response.json();
+                            this.showMessage('保存失败: ' + (error.detail || '未知错误'), 'error');
+                        }
+                    } catch (err) {
+                        this.showMessage('保存失败: ' + err.message, 'error');
+                    }
+                },
+                resetConfig(config) {
+                    config.editValue = config.value;
+                },
+                async initDefaultConfigs() {
+                    const token = localStorage.getItem('access_token');
+                    this.loading = true;
+
+                    try {
+                        const response = await fetch('/api/settings/init-default-configs', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+
+                        if (response.ok) {
+                            this.showMessage('默认配置初始化成功', 'success');
+                            await this.loadConfigs();
+                        } else {
+                            const error = await response.json();
+                            this.showMessage('初始化失败: ' + (error.detail || '未知错误'), 'error');
+                        }
+                    } catch (err) {
+                        this.showMessage('初始化失败: ' + err.message, 'error');
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                getCurrentCategoryLabel() {
+                    const category = this.categories.find(c => c.key === this.activeTab);
+                    return category ? category.label : '配置管理';
+                },
+                showMessage(msg, type = 'success') {
+                    this.message = msg;
+                    this.messageType = type;
+                    setTimeout(() => {
+                        this.message = '';
+                    }, 3000);
+                },
+                logout() {
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('username');
+                    localStorage.removeItem('is_admin');
+                    window.location.href = '/auth/login';
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

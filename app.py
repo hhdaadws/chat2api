@@ -36,6 +36,25 @@ security_scheme = HTTPBearer()
 
 from app import app
 
+# Import database initialization
+from db.database import init_db
+from utils.db_globals import init_global_state
+
+# Initialize database on startup
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database tables and global state on startup"""
+    await init_db()
+    await init_global_state()
+
+# Import authentication and settings APIs
+import api.auth
+import api.settings
+
+# Mount authentication and settings routers
+app.include_router(api.auth.router, tags=["auth"])
+app.include_router(api.settings.router, tags=["settings"])
+
 import api.chat2api
 
 if enable_gateway:
