@@ -1,6 +1,6 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, Form
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -47,10 +47,7 @@ async def settings_page(
     current_user: User = Depends(get_current_active_admin)
 ):
     """Render settings page (admin only)"""
-    return templates.TemplateResponse("settings.html", {
-        "request": request,
-        "username": current_user.username
-    })
+    return FileResponse("templates/settings.html")
 
 
 @router.get("/api/settings/configs", response_model=List[ConfigResponse])

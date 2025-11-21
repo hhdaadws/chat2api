@@ -1,7 +1,7 @@
 from datetime import timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel, EmailStr
@@ -40,13 +40,13 @@ class Token(BaseModel):
 @router.get("/auth/login", response_class=HTMLResponse)
 async def login_page(request: Request):
     """Render login page"""
-    return templates.TemplateResponse("login.html", {"request": request})
+    return FileResponse("templates/auth_login.html")
 
 
 @router.get("/auth/register", response_class=HTMLResponse)
 async def register_page(request: Request):
     """Render register page"""
-    return templates.TemplateResponse("register.html", {"request": request})
+    return FileResponse("templates/register.html")
 
 
 @router.post("/auth/register")
